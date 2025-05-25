@@ -2,14 +2,21 @@
 Power Analysis for Causal Mediation Analysis with Multiple Mediators
 
 
-# Install
+# Install and load the package
 ```{r}
 remotes::install_github("xliu12/PowerMediators", subdir = "PowerMediators")
+library(PowerMediators)
+
 ```
 
 # Example
 
 ```{r}
+library(mvtnorm)
+library(tidyverse)
+library(glue)
+library(parallel)
+library(PowerMediators)
 
 # with small numbers of simulations and bootstrap draws
 test_run <- runPower(
