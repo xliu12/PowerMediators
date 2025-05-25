@@ -40,7 +40,8 @@ gen.data <- function(iseed = 123,
   gen_a <- list(a_intercept = qnorm(treat.prop), a_on_x = a_on_x)
   a_continuous <- gen_a[["a_intercept"]] + gen_a[["a_on_x"]] * X_rowsum + rnorm(n, sd = sqrt(1 - gen_a[["a_on_x"]]^2))
   A <- 1*(a_continuous > 0)
-  A_std <- as.numeric(scale(A))
+  # A_std <- as.numeric(scale(A))
+  A_std <- A
   # Mediators -----------------
   # m_on_a = c(0, 0.4)
   # em_corr = 0.2
@@ -70,7 +71,8 @@ gen.data <- function(iseed = 123,
   
   M <- map(1:num_m, \(i=1) {
     m_intercept[i] + m_on_a[i] * A_std + m_on_x[i] * X_rowsum + 
-      em_list[["trt"]][, i] * A + em_list[["ctrl"]][, i] * (1 - A)
+      em_list[["ctrl"]][, i]
+      # em_list[["trt"]][, i] * A + em_list[["ctrl"]][, i] * (1 - A)
   }) %>% reduce(cbind)
   
   colnames(M) <- glue("M{1:num_m}")
@@ -84,7 +86,9 @@ gen.data <- function(iseed = 123,
   
   wmat <- model.matrix(as.formula(gsub("Y", "", y_formula)), data = data.frame(A, M, X=X_rowsum))
   wmat[1, ]
-  wmat_std <- scale(wmat[, -1])
+  # wmat_std <- scale(wmat[, -1])
+  wmat_std <- wmat[, -1]
+  
   y_coefs <- numeric(length = ncol(wmat_std))
   names(y_coefs) <- colnames(wmat_std)
   y_coefs["A"] <- y_on_a
@@ -138,62 +142,5 @@ gen.data <- function(iseed = 123,
   return(out)
 }
 
-condition_all <- data.frame(
-  expand.grid(
-    n = c(200),
-    m1_on_a = c(0, 0.3),
-    y_on_am1 = c(0, 0.1),
-    y_on_m1m2 = c(0, 0.1),
-    y_on_am1m2 = c(0, 0.1)
-  )) 
 
-condition <- condition_all %>% 
-  filter(y_on_am1 != 0, y_on_m1m2 != 0, y_on_am1m2 != 0)
-
-OneData <- function(iseed = 123, cond = 1){
-  num_m <- 2
-  gen_data <- gen.data(
-    iseed = iseed,
-    n = condition$n[cond],
-    num_x = 2,
-    treat.prop = 0.5,
-    treat.randomized = FALSE,
-    a_on_x = sqrt(0.13), # standardized coefficient
-    
-    num_m = 2,
-    m_on_a = c(condition$m1_on_a[cond], 0.3),
-    m_on_x = rep(sqrt(0.13), num_m),
-    em_corr = 0.2,
-    # R2x.m = rep(0.13, num_m)
-    M_binary = rep(FALSE, num_m),
-    
-    # y_formula = "Y ~ A + M1 + M2 + X + A:M1 + A:M2 + M1:M2 + A:M1:M2",
-    y_on_a = 0.1, # standardized coefficient
-    y_on_m = rep(0.3, num_m),
-    y_on_am_2way = c(condition$y_on_am1[cond], 0.1),
-    y_on_m_2way = condition$y_on_m1m2[cond],
-    y_on_am_3way = condition$y_on_am1m2[cond],
-    y_on_x = sqrt(0.02),
-    Y_binary = FALSE
-  )
-  
-  
-  dat <- gen_data$dat
-  
-  true_vals <- gen_data$true_vals
-  
-  res <- med2.reg(
-    data = dat,
-    sig.IIE = 0.05,
-    sig.adjust = c("no_adjust", "bonferroni", "modified_bon1", "modified_bon2"),
-    nboot = 1000
-  )
-  
-  res1 <- data.frame(condition[cond, ],
-                     full_join(res, true_vals, by = "effect"), 
-                    row.names = NULL)
-  
-  
-  return(res1)
-}
 
