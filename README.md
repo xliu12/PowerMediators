@@ -4,7 +4,7 @@ Power Analysis for Causal Mediation Analysis with Multiple Mediators
 
 # Install
 ```{r}
-remotes::install_github("xliu12/PowerMediators")
+remotes::install_github("xliu12/PowerMediators", subdir = "PowerMediators")
 ```
 
 # Example
