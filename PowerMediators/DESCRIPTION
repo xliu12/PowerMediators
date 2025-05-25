@@ -1,0 +1,23 @@
+Package: PowerMediators
+Type: Package
+Title: Power Analysis for Causal Mediation Analysis with Multiple Mediators
+Version: 0.1.0
+Author: Author
+Maintainer: Author <author@mail>
+Description: Implement a simulation-based method for statistical power calculation in causal mediation analysis with multiple correlated mediators.
+Imports: 
+    tidyverse,
+    glue,
+    origami,
+    fastDummies,
+    SuperLearner,
+    mvtnorm
+Suggests:
+    testthat,
+    knitr,
+    rmarkdown
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+VignetteBuilder: knitr, rmarkdown
+RoxygenNote: 7.3.1
