@@ -211,7 +211,8 @@ one.dataset <- function(iseed = 123,
     y_on_m_2way = y_on_m_2way,
     y_on_am_3way = y_on_am_3way,
     y_on_x = y_on_x,
-    Y_binary = Y_binary
+    Y_binary = Y_binary,
+    nreps.binYM = nreps.binYM
   )
 
 

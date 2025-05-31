@@ -31,7 +31,8 @@ gen.data <- function(iseed = 123,
   y_on_m_2way = rep(0.1, 2 * (2-1)/2),
   y_on_am_3way = rep(0, 2 * (2-1)/2),
   y_on_x = sqrt(0.02),
-  Y_binary = FALSE
+  Y_binary = FALSE,
+  nreps.binYM = 1000
 ) {
   dat <- data.frame(id = 1:n)
   # Covariates --------------
