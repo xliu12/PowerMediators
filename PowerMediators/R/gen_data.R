@@ -1,6 +1,8 @@
 library(mvtnorm)
 library(tidyverse)
 library(glue)
+library(cubature)
+
 
 
 gen.data <- function(iseed = 123,
@@ -31,8 +33,7 @@ gen.data <- function(iseed = 123,
   y_on_m_2way = rep(0.1, 2 * (2-1)/2),
   y_on_am_3way = rep(0, 2 * (2-1)/2),
   y_on_x = sqrt(0.02),
-  Y_binary = FALSE,
-  nreps.binYM = 1000
+  Y_binary = FALSE
 ) {
   dat <- data.frame(id = 1:n)
   # Covariates --------------
@@ -198,15 +199,14 @@ gen.data <- function(iseed = 123,
       y_fit$coefficients <- y_coefs[i, ] %>% unlist
       m1_fit$coefficients <- m1_coefs[i, ] %>% unlist
       m2_fit$coefficients <- m2_coefs[i, ] %>% unlist
-      
-      IIEs_tmp <- bYM_cal.IIE(y_fit, m1_fit, m2_fit, data = data.frame(A, M, Y, X=X_rowsum),
+
+      IIEs_tmp <- bYM_cal.IIE(y_coefs[i, ], m1_coefs[i, ], m2_coefs[i, ], 
+                              y_fit, m1_fit, m2_fit, data = data.frame(A, M, Y, X=X_rowsum),
                               M_binary,
-                              Y_binary, nreps = nreps.binYM)
+                              Y_binary)
     }) %>% purrr::reduce(bind_rows)
     
   }
-  
-  # true_vals <- c(true_IIE_M1, true_IIE_M2)
   true_vals <- data.frame(true_vals) %>% rownames_to_column(var = "effect")
   
   # out -----

@@ -4,7 +4,7 @@ estimate_med2.reg <- function(
     data = dat,
     M_binary,
     Y_binary,
-    n.draws = 1000, nreps.binYM = 1000
+    n.draws = 1000 
 ) {
   Xnames <- grep("^X", names(data), value = TRUE)
   
@@ -66,9 +66,10 @@ estimate_med2.reg <- function(
       m1_fit$coefficients <- m1_coefs[i, ] %>% unlist
       m2_fit$coefficients <- m2_coefs[i, ] %>% unlist
       
-      IIEs_tmp <- bYM_cal.IIE(y_fit, m1_fit, m2_fit, data,
+      IIEs_tmp <- bYM_cal.IIE(y_coefs[i, ], m1_coefs[i, ], m2_coefs[i, ],
+                              y_fit, m1_fit, m2_fit, data,
                               M_binary,
-                              Y_binary, nreps = nreps.binYM)
+                              Y_binary)
     }) %>% purrr::reduce(bind_rows)
     
   }
@@ -82,10 +83,9 @@ med2.reg <- function(
     sig.IIE = 0.05,
     sig.adjust = c("no_adjust", "bonferroni", "modified_bon1", "modified_bon2"),
     nboot = NULL, # for bootstrap CI
-    n.draws = 1000, # for Monte Carlo CI
-    nreps.binYM = 1000 # for imputation-based estimation of IIEs
+    n.draws = 1000 # for Monte Carlo CI
 ) {
-  est_IIE <- estimate_med2.reg(data, M_binary, Y_binary, n.draws = NULL, nreps.binYM = nreps.binYM)
+  est_IIE <- estimate_med2.reg(data, M_binary, Y_binary, n.draws = NULL)
   if (!is.null(nrow(est_IIE))) {
     est_IIE <- est_IIE %>% unlist
   }
@@ -93,10 +93,10 @@ med2.reg <- function(
   if (!is.null(nboot)) {
     boot_est <- t(replicate(nboot, {
       df_boot <- data[sample(1:nrow(data), replace = TRUE), ]
-      est_IIE <- estimate_med2.reg(data = df_boot, M_binary, Y_binary, n.draws = NULL, nreps.binYM)
+      est_IIE <- estimate_med2.reg(data = df_boot, M_binary, Y_binary, n.draws = NULL)
     })) %>% as.data.frame()
   } else {
-    boot_est <- estimate_med2.reg(data, M_binary, Y_binary, n.draws, nreps.binYM)
+    boot_est <- estimate_med2.reg(data, M_binary, Y_binary, n.draws)
   }
   
   
@@ -229,9 +229,78 @@ cal.IIE_M2 <- function(a0=1, a1=0, y_coefs, m1_coefs, m2_coefs,
 
 # outcome regression-imputation -----
 EY.a0a1a2 <- function(a0=1, a1=0, a2=1,
+                      y_coefs, m1_coefs, m2_coefs,
                       y_fit, m1_fit, m2_fit, data,
                       M_binary = c(FALSE, FALSE),
-                      Y_binary = TRUE, nreps = 1000) {
+                      Y_binary = TRUE) {
+  
+  if (Y_binary==TRUE & (M_binary[1]==TRUE) & (M_binary[2]==TRUE)) {
+    pM1a1 <- predict(m1_fit, newdata = mutate(data, A=a1), type = "response")
+    pM2a2 <- predict(m2_fit, newdata = mutate(data, A=a2), type = "response")
+    
+    EYx <- map2(.x = c(0,0,1,1), .y = c(0,1,0,1), .f = \(.x, .y) {
+      predict(y_fit, newdata = mutate(data, A=a0, M1=.x, M2=.y), type = "response") * (pM1a1 * .x + (1-pM1a1) * (1-.x)) * (pM2a2 * .y + (1-pM2a2) * (1-.y))
+    }) %>% reduce(.f = `+`)
+    
+    EYa0a1a2 <- mean(EYx)
+  }
+  
+  if (Y_binary==TRUE & (M_binary[1]==TRUE) & (M_binary[2]==FALSE)) {
+    EYa0a1a2 <- E.YbM1bM2g(a0, a1, a2, y_coefs, m1_coefs, m2_coefs, data)
+  }
+  
+  if (Y_binary==TRUE & (M_binary[1]==FALSE) & (M_binary[2]==FALSE)) {
+    EYa0a1a2 <- calE.YbM1gM2g(a0, a1, a2, y_coefs, m1_coefs, m2_coefs, data)
+  }
+  
+  if (Y_binary==FALSE) {
+    M1a1 <- predict(m1_fit, newdata = mutate(data, A=a1), type = "response")
+    M2a2 <- predict(m2_fit, newdata = mutate(data, A=a2), type = "response")
+    EYx <- predict(y_fit, newdata = mutate(data, A=a0, M1=M1a1, M2=M2a2), type = "response")
+    EYa0a1a2 <- mean(EYx)
+  }
+  
+  EYa0a1a2
+}
+
+bYM_cal.IIE <- function(y_coefs, m1_coefs, m2_coefs, 
+                        y_fit, m1_fit, m2_fit, data,
+                        M_binary = c(FALSE, FALSE),
+                        Y_binary = TRUE) {
+  
+  a_vals <- expand.grid(a0=c(0,1), a1=c(0,1), a2=c(0,1))
+  
+  EYa0a1a2 <- sapply(1:nrow(a_vals), \(i) {
+    EY.a0a1a2(a0 = a_vals$a0[i], a1 = a_vals$a1[i], a2 = a_vals$a2[i],
+              y_coefs, m1_coefs, m2_coefs,
+              y_fit, m1_fit, m2_fit, data,
+              M_binary,
+              Y_binary)
+  })
+  names(EYa0a1a2) <- glue("Y({a_vals$a0},M1({a_vals$a1}),M2({a_vals$a2}))")
+  
+  # contrast outcomes for IIEs
+  IIE_M1 <- map2(.x=c(0,0,1,1), .y=c(0,1,0,1), .f = \(.x, .y) {
+    IIE_M1_tmp <- EYa0a1a2[[glue("Y({.x},M1(1),M2({.y}))")]] - EYa0a1a2[[glue("Y({.x},M1(0),M2({.y}))")]]
+    names(IIE_M1_tmp) <- glue("IIE_M1({.x},,{.y})")
+    IIE_M1_tmp
+  }) %>% unlist
+  
+  IIE_M2 <- map2(.x=c(0,0,1,1), .y=c(0,1,0,1), .f = \(.x, .y) {
+    IIE_M2_tmp <- EYa0a1a2[[glue("Y({.x},M1({.y}),M2(1))")]] - EYa0a1a2[[glue("Y({.x},M1({.y}),M2(0))")]]
+    names(IIE_M2_tmp) <- glue("IIE_M2({.x},{.y},)")
+    IIE_M2_tmp
+  }) %>% unlist
+  
+  c(IIE_M1, IIE_M2)
+}
+
+
+# NOT USED -------------
+intEY.a0a1a2 <- function(a0=1, a1=0, a2=1,
+                         y_fit, m1_fit, m2_fit, data,
+                         M_binary = c(FALSE, FALSE),
+                         Y_binary = TRUE, nreps = 1000) {
   
   if (Y_binary==TRUE & (M_binary[1]==TRUE) & (M_binary[2]==TRUE)) {
     pM1a1 <- predict(m1_fit, newdata = mutate(data, A=a1), type = "response")
@@ -287,43 +356,9 @@ EY.a0a1a2 <- function(a0=1, a1=0, a2=1,
     M1a1 <- predict(m1_fit, newdata = mutate(data, A=a1), type = "response")
     M2a2 <- predict(m2_fit, newdata = mutate(data, A=a2), type = "response")
     EYx <- predict(y_fit, newdata = mutate(data, A=a0, M1=M1a1, M2=M2a2), type = "response")
+    EYa0a1a2 <- mean(EYx)
   }
-  
-  EYa0a1a2 <- mean(EYx)
   
   EYa0a1a2
 }
-
-bYM_cal.IIE <- function(y_fit, m1_fit, m2_fit, data,
-                        M_binary = c(FALSE, FALSE),
-                        Y_binary = TRUE, nreps = 1000
-) {
-  
-  a_vals <- expand.grid(a0=c(0,1), a1=c(0,1), a2=c(0,1))
-  
-  EYa0a1a2 <- sapply(1:nrow(a_vals), \(i) {
-    EY.a0a1a2(a0 = a_vals$a0[i], a1 = a_vals$a1[i], a2 = a_vals$a2[i],
-              y_fit, m1_fit, m2_fit, data,
-              M_binary,
-              Y_binary, nreps)
-  })
-  names(EYa0a1a2) <- glue("Y({a_vals$a0},M1({a_vals$a1}),M2({a_vals$a2}))")
-  
-  # contrast outcomes for IIEs
-  IIE_M1 <- map2(.x=c(0,0,1,1), .y=c(0,1,0,1), .f = \(.x, .y) {
-    IIE_M1_tmp <- EYa0a1a2[[glue("Y({.x},M1(1),M2({.y}))")]] - EYa0a1a2[[glue("Y({.x},M1(0),M2({.y}))")]]
-    names(IIE_M1_tmp) <- glue("IIE_M1({.x},,{.y})")
-    IIE_M1_tmp
-  }) %>% unlist
-  
-  IIE_M2 <- map2(.x=c(0,0,1,1), .y=c(0,1,0,1), .f = \(.x, .y) {
-    IIE_M2_tmp <- EYa0a1a2[[glue("Y({.x},M1({.y}),M2(1))")]] - EYa0a1a2[[glue("Y({.x},M1({.y}),M2(0))")]]
-    names(IIE_M2_tmp) <- glue("IIE_M2({.x},{.y},)")
-    IIE_M2_tmp
-  }) %>% unlist
-  
-  c(IIE_M1, IIE_M2)
-}
-
-
 

@@ -8,7 +8,12 @@
 #'
 #'
 #' @export
-#'
+#' 
+#' @import dplyr
+#' @importFrom purrr map
+#' 
+#' 
+
 runPower <- function(seed_user = 12,
                      n = 100,
                      num_x = 2,
@@ -42,8 +47,7 @@ runPower <- function(seed_user = 12,
                      # for confidence interval and estimation
                      nboot = NULL, # for bootstrap CI
                      n.draws = 1000, # for Monte Carlo CI
-                     nreps.binYM = 1000, # for imputation-based estimation of IIEs,
-                     
+              
                      # for power
                      sig.level = 0.05,
                      # for simulation-based power calculation
@@ -86,7 +90,6 @@ runPower <- function(seed_user = 12,
                        # for confidence interval and estimation
                        nboot = nboot, # for bootstrap CI
                        n.draws = n.draws, # for Monte Carlo CI
-                       nreps.binYM = nreps.binYM, # for imputation-based estimation of IIEs,
                        
                        # for power
                        sig.level = sig.level,
@@ -178,7 +181,6 @@ one.dataset <- function(iseed = 123,
                         # for confidence interval and estimation
                         nboot = NULL, # for bootstrap CI
                         n.draws = 1000, # for Monte Carlo CI
-                        nreps.binYM = 1000, # for imputation-based estimation of IIEs,
                         
                         # for power
                         sig.level = 0.05
@@ -211,8 +213,7 @@ one.dataset <- function(iseed = 123,
     y_on_m_2way = y_on_m_2way,
     y_on_am_3way = y_on_am_3way,
     y_on_x = y_on_x,
-    Y_binary = Y_binary,
-    nreps.binYM = nreps.binYM
+    Y_binary = Y_binary
   )
 
 
@@ -220,15 +221,16 @@ one.dataset <- function(iseed = 123,
 
   true_vals <- gen_data$true_vals
 
+  system.time(
   res <- med2.reg(
     data = dat, M_binary, Y_binary, 
     sig.IIE = sig.level,
     sig.adjust = c("no_adjust", "bonferroni", "modified_bon1", "modified_bon2"),
     nboot = nboot, 
-    n.draws = n.draws, # for Monte Carlo CI
-    nreps.binYM = nreps.binYM # for imputation-based estimation of IIEs
+    n.draws = n.draws # for Monte Carlo CI
+  
   )
-
+  )
   res1 <- data.frame(n,
                      full_join(res, true_vals, by = "effect"), sig.level,
                      row.names = NULL)
