@@ -4,7 +4,7 @@ library(glue)
 library(parallel)
 library(integral)
 
-
+library(calculus)
 
 # download and unzip the package; and run
 devtools::load_all("PowerMediators")
@@ -35,7 +35,7 @@ test_run1 <- runPower(
   # m_on_a = rep(0.14, 2), 
   # m_on_x = rep(sqrt(0.13), 2),
   em_corr = 0,
-  M_binary = c(TRUE, FALSE),
+  M_binary = c(FALSE, FALSE),
   
   # y_on_a = 0.1, # standardized coefficient
   # y_on_m = rep(0.39, 2),
@@ -43,11 +43,11 @@ test_run1 <- runPower(
   # y_on_m_2way = rep(0.1, 2 * (2-1)/2),
   # y_on_am_3way = rep(0, 2 * (2-1)/2),
   # y_on_x = sqrt(0.02),
-  Y_binary = FALSE,
+  Y_binary = TRUE,
   
   # for confidence interval and estimation
-  nboot = NULL, # for bootstrap CI
-  n.draws = 1000, # for Monte Carlo CI
+  nboot = 10, # for bootstrap CI
+  # n.draws = 10, # for Monte Carlo CI
   
   # for power
   sig.level = 0.05,
