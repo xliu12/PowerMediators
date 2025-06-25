@@ -1,23 +1,25 @@
 
 # M1,M2 gaussian, Y binary ---------------
 E.YbM1gM2g <- function(em2_vec=0, 
-                        a0=1, a1=0, a2=1,
-                      y_coefs, m1_coefs, m2_coefs, data) {
+                        a0=1, a1=0, a2=1, 
+                      y_coefs, m1_coefs, m2_coefs, 
+                      y_fit, m1_fit, m2_fit,
+                      data) {
   n <- nrow(data)
   y_coefs <- unlist(y_coefs)
   m1_coefs <- unlist(m1_coefs)
   m2_coefs <- unlist(m2_coefs)
-  # em2 <- rep(e.m2, n)
+  
   X <- grep("^X", names(y_coefs), value = TRUE)
   Xmat <- as.matrix(data[, X, drop = FALSE])
-  
-  # calculate sigma_em
-  hat.em1 <- data$M1 - m1_coefs[[1]] - as.matrix(data[, names(m1_coefs[-1])]) %*% m1_coefs[-1] #apply(data[, names(m1_coefs[-1])], 1, \(x) sum(x*m1_coefs[-1]))
-  sigma_em1 <- sd(hat.em1) * sqrt(n-1)  / sqrt(n-length(m1_coefs))
-  
-  hat.em2 <- data$M2 - m2_coefs[[1]] - as.matrix(data[, names(m2_coefs[-1])]) %*% m2_coefs[-1] 
-  
-  sigma_em2 <- sd(hat.em2) * sqrt(n-1)  / sqrt(n-length(m2_coefs))
+
+  # # calculate sigma_em
+  # hat.em1 <- data$M1 - m1_coefs[[1]] - as.matrix(data[, names(m1_coefs[-1])]) %*% m1_coefs[-1] #apply(data[, names(m1_coefs[-1])], 1, \(x) sum(x*m1_coefs[-1]))
+  # sigma_em1 <- sd(hat.em1) * sqrt(n-1)  / sqrt(n-length(m1_coefs))
+  # hat.em2 <- data$M2 - m2_coefs[[1]] - as.matrix(data[, names(m2_coefs[-1])]) %*% m2_coefs[-1] 
+  # sigma_em2 <- sd(hat.em2) * sqrt(n-1)  / sqrt(n-length(m2_coefs))
+  sigma_em1 <- sigma(m1_fit)
+  sigma_em2 <- sigma(m2_fit)
   
   # mean M1a1 given x
   M1a1x <- m1_coefs[[1]] + m1_coefs[["A"]]*a1 + Xmat %*% m1_coefs[X] 
@@ -40,12 +42,14 @@ E.YbM1gM2g <- function(em2_vec=0,
 }
 
 calE.YbM1gM2g <- function(a0=1, a1=0, a2=1,
-                          y_coefs, m1_coefs, m2_coefs, data) {
+                          y_coefs, m1_coefs, m2_coefs, y_fit, m1_fit, m2_fit, data) {
   
   value <- calculus::integral(
     E.YbM1gM2g, bounds = list(em2_vec = c(-3.3,3.3)), 
     params = list(a0, a1, a2,
-                  y_coefs = y_coefs, m1_coefs = m1_coefs, m2_coefs = m2_coefs, data = data)
+                  y_coefs = y_coefs, m1_coefs = m1_coefs, m2_coefs = m2_coefs,
+                  y_fit = y_fit, m1_fit = m1_fit, m2_fit = m2_fit, 
+                  data = data)
     , vectorize = TRUE)
   
   value$value
@@ -57,7 +61,7 @@ calE.YbM1gM2g <- function(a0=1, a1=0, a2=1,
 # label the binary mediator as M1
 # label the continuous mediator as M2
 E.YbM1bM2g <- function(a0=1, a1=0, a2=1,
-                       y_coefs, m1_coefs, m2_coefs, data) {
+                       y_coefs, m1_coefs, m2_coefs, y_fit, m1_fit, m2_fit, data) {
   n <- nrow(data)
   y_coefs <- unlist(y_coefs)
   m1_coefs <- unlist(m1_coefs)
@@ -66,8 +70,9 @@ E.YbM1bM2g <- function(a0=1, a1=0, a2=1,
   X <- grep("^X", names(y_coefs), value = TRUE)
   Xmat <- as.matrix(data[, X, drop = FALSE])
   # calculate sigma_em
-  hat.em2 <- data$M2 - m2_coefs[[1]] - as.matrix(data[, names(m2_coefs[-1])]) %*% m2_coefs[-1] #apply(data[, names(m2_coefs[-1])], 1, \(x) sum(x*m2_coefs[-1]))
-  sigma_em2 <- sd(hat.em2) * sqrt(n-1)  / sqrt(n-length(m2_coefs))
+  # hat.em2 <- data$M2 - m2_coefs[[1]] - as.matrix(data[, names(m2_coefs[-1])]) %*% m2_coefs[-1] #apply(data[, names(m2_coefs[-1])], 1, \(x) sum(x*m2_coefs[-1]))
+  # sigma_em2 <- sd(hat.em2) * sqrt(n-1)  / sqrt(n-length(m2_coefs))
+  sigma_em2 <- sigma(m2_fit)
   
   # link M1a1 given x
   M1a1x <- m1_coefs[[1]] + m1_coefs[["A"]]*a1 + Xmat %*% m1_coefs[X]

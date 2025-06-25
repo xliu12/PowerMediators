@@ -246,11 +246,11 @@ EY.a0a1a2 <- function(a0=1, a1=0, a2=1,
   }
   
   if (Y_binary==TRUE & (M_binary[1]==TRUE) & (M_binary[2]==FALSE)) {
-    EYa0a1a2 <- E.YbM1bM2g(a0, a1, a2, y_coefs, m1_coefs, m2_coefs, data)
+    EYa0a1a2 <- E.YbM1bM2g(a0, a1, a2, y_coefs, m1_coefs, m2_coefs, y_fit, m1_fit, m2_fit, data)
   }
   
   if (Y_binary==TRUE & (M_binary[1]==FALSE) & (M_binary[2]==FALSE)) {
-    EYa0a1a2 <- calE.YbM1gM2g(a0, a1, a2, y_coefs, m1_coefs, m2_coefs, data)
+    EYa0a1a2 <- calE.YbM1gM2g(a0, a1, a2, y_coefs, m1_coefs, m2_coefs, y_fit, m1_fit, m2_fit, data)
   }
   
   if (Y_binary==FALSE) {
