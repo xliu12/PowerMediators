@@ -31,9 +31,12 @@ estimate_med2.reg <- function(
   }
   
   # coefficient estimates
-  y_coefs <- as.data.frame(t(coef(y_fit)))
-  m1_coefs <- as.data.frame(t(coef(m1_fit)))
-  m2_coefs <- as.data.frame(t(coef(m2_fit)))
+  if (is.null(n.draws)) {
+    # draws of coefficient estimates for imputation-based estimator and MCCI
+    y_coefs <- mvtnorm::rmvnorm(1, mean = coef(y_fit), sigma = diag(0, length(coef(y_fit)))) %>% as.data.frame()
+    m1_coefs <- mvtnorm::rmvnorm(1, mean = coef(m1_fit), sigma = diag(0, length(coef(m1_fit)))) %>% as.data.frame()
+    m2_coefs <- mvtnorm::rmvnorm(1, mean = coef(m2_fit), sigma = diag(0, length(coef(m2_fit)))) %>% as.data.frame()
+  }
   
   if (!is.null(n.draws)) {
     # draws of coefficient estimates for imputation-based estimator and MCCI
@@ -91,10 +94,12 @@ med2.reg <- function(
   }
   
   if (!is.null(nboot)) {
-    boot_est <- t(replicate(nboot, {
+    boot_est <- replicate(nboot, {
       df_boot <- data[sample(1:nrow(data), replace = TRUE), ]
       est_IIE <- estimate_med2.reg(data = df_boot, M_binary, Y_binary, n.draws = NULL)
-    })) %>% as.data.frame()
+    }, simplify = FALSE) %>% do.call(rbind, .)
+    
+    
   } else {
     boot_est <- estimate_med2.reg(data, M_binary, Y_binary, n.draws)
   }
