@@ -31,12 +31,9 @@ estimate_med2.reg <- function(
   }
   
   # coefficient estimates
-  if (is.null(n.draws)) {
-    # draws of coefficient estimates for imputation-based estimator and MCCI
-    y_coefs <- mvtnorm::rmvnorm(1, mean = coef(y_fit), sigma = diag(0, length(coef(y_fit)))) %>% as.data.frame()
-    m1_coefs <- mvtnorm::rmvnorm(1, mean = coef(m1_fit), sigma = diag(0, length(coef(m1_fit)))) %>% as.data.frame()
-    m2_coefs <- mvtnorm::rmvnorm(1, mean = coef(m2_fit), sigma = diag(0, length(coef(m2_fit)))) %>% as.data.frame()
-  }
+  y_coefs <- as.data.frame(t(coef(y_fit)))
+  m1_coefs <- as.data.frame(t(coef(m1_fit)))
+  m2_coefs <- as.data.frame(t(coef(m2_fit)))
   
   if (!is.null(n.draws)) {
     # draws of coefficient estimates for imputation-based estimator and MCCI
@@ -94,12 +91,10 @@ med2.reg <- function(
   }
   
   if (!is.null(nboot)) {
-    boot_est <- replicate(nboot, {
+    boot_est <- t(replicate(nboot, {
       df_boot <- data[sample(1:nrow(data), replace = TRUE), ]
       est_IIE <- estimate_med2.reg(data = df_boot, M_binary, Y_binary, n.draws = NULL)
-    }, simplify = FALSE) %>% do.call(rbind, .)
-    
-    
+    })) %>% as.data.frame()
   } else {
     boot_est <- estimate_med2.reg(data, M_binary, Y_binary, n.draws)
   }
@@ -111,7 +106,7 @@ med2.reg <- function(
   k <- ncol(boot_est_IIE_M1) # number of tests
   
   r_IIE_M1 <- map_dbl(1:k, \(i=1) {
-    mean(abs(cor(boot_est_IIE_M1)[i, -i]))
+    mean(abs(cor(boot_est_IIE_M1, use = "pairwise")[i, -i]))
   })
   names(r_IIE_M1) <- colnames(boot_est_IIE_M1)
   # modified_bon1
@@ -135,9 +130,9 @@ med2.reg <- function(
   names(sig.PT_IIE_M1) <- names(r_IIE_M1)
   
   test_IIE_M1 <- map_df(1:k, \(i=1) {
-    ci_low <- quantile(boot_est_IIE_M1[[i]], probs = sig.PT_IIE_M1[[i]]/2)
-    ci_up <- quantile(boot_est_IIE_M1[[i]], probs = 1-sig.PT_IIE_M1[[i]]/2)
-    SE <- sd(boot_est_IIE_M1[[i]])
+    ci_low <- quantile(boot_est_IIE_M1[[i]], probs = sig.PT_IIE_M1[[i]]/2, na.rm = TRUE)
+    ci_up <- quantile(boot_est_IIE_M1[[i]], probs = 1-sig.PT_IIE_M1[[i]]/2, na.rm = TRUE)
+    SE <- sd(boot_est_IIE_M1[[i]], na.rm = TRUE)
     
     if_sig <- (ci_low*ci_up>0)
     
@@ -155,7 +150,7 @@ med2.reg <- function(
   k <- ncol(boot_est_IIE_M2) # number of tests
   
   r_IIE_M2 <- map_dbl(1:k, \(i=1) {
-    mean(abs(cor(boot_est_IIE_M2)[i, -i]))
+    mean(abs(cor(boot_est_IIE_M2, use = "pairwise")[i, -i]))
   })
   names(r_IIE_M2) <- colnames(boot_est_IIE_M2)
   # modified_bon1
@@ -179,9 +174,9 @@ med2.reg <- function(
   names(sig.PT_IIE_M2) <- names(r_IIE_M2)
   
   test_IIE_M2 <- map_df(1:k, \(i=1) {
-    ci_low <- quantile(boot_est_IIE_M2[[i]], probs = sig.PT_IIE_M2[[i]]/2)
-    ci_up <- quantile(boot_est_IIE_M2[[i]], probs = 1-sig.PT_IIE_M2[[i]]/2)
-    SE <- sd(boot_est_IIE_M2[[i]])
+    ci_low <- quantile(boot_est_IIE_M2[[i]], probs = sig.PT_IIE_M2[[i]]/2, na.rm = TRUE)
+    ci_up <- quantile(boot_est_IIE_M2[[i]], probs = 1-sig.PT_IIE_M2[[i]]/2, na.rm = TRUE)
+    SE <- sd(boot_est_IIE_M2[[i]], na.rm = TRUE)
     
     if_sig <- (ci_low*ci_up>0)
     

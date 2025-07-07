@@ -146,6 +146,7 @@ gen.data <- function(iseed = 123,
   data <- dat
   
   # true values ------------------
+  sqrt(var_em)
   m1_coefs <- c(gen_m$m_intercept[1], gen_m$m_on_a[1], gen_m$m_on_x[1])
   m1_coefs <- as.data.frame(t(m1_coefs))
   names(m1_coefs) <- c("(Intercept)", "A", "X")
@@ -195,7 +196,14 @@ gen.data <- function(iseed = 123,
     } else {
       y_fit <- lm(y_formula, data = data.frame(A, M, Y, X=X_rowsum))
     }
+    
+    
+    y_coefs <- if_else(Y_binary, y_coefs/as.numeric(sqrt(var_ey)), y_coefs)
+    m1_coefs <- if_else(M_binary[1], m1_coefs/as.numeric(sqrt(var_em[1])), m1_coefs)
+    m2_coefs <- if_else(M_binary[2], m2_coefs/as.numeric(sqrt(var_em[2])), m2_coefs)
+    
     true_vals <- purrr::map(1:nrow(y_coefs), \(i=1) {
+      
       y_fit$coefficients <- y_coefs[i, ] %>% unlist
       m1_fit$coefficients <- m1_coefs[i, ] %>% unlist
       m2_fit$coefficients <- m2_coefs[i, ] %>% unlist
