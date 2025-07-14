@@ -9,57 +9,65 @@ library(PowerMediators)
 
 ```
 
-# Example
+# Example: Power Calculation
 
 ```{r}
 library(mvtnorm)
 library(tidyverse)
 library(glue)
 library(parallel)
+library(calculus)
+
 library(PowerMediators)
 
-# with small numbers of simulations and bootstrap draws
-test_run <- runPower(
-  n = 200, nsims = 2, nboot = 20
-)
+?PowerMediators::runPower
 
-test_run
+# other arguments use the default specification
+power_res <- runPower(n = 100, nsims = 1000, mc.cores = 5)
 
-
-
-# with user-specified parameters
-
-test_run1 <- runPower(
-  n = 200, 
-  num_x = 2,
-  treat.prop = 0.5,
-  treat.randomized = FALSE,
-  a_on_x = 0.1, # standardized coefficient in the treatment model
-  
-  m_on_a = c(0.3, 0.2), # standardized coefficients in the mediators' model
-  m_on_x = c(0.1, 0.1),
-  em_corr = 0,
-  
-  y_on_a = 0.1, # standardized coefficients in the outcome model
-  y_on_m = c(0, 0),
-  y_on_am_2way = c(0, 0.3),
-  y_on_m_2way = 0,
-  y_on_am_3way = 0.3,
-  y_on_x = 0.1,
-  
-  nboot = 10, # default is 1000 bootstrap draws for confidence intervals
-  sig.level = 0.05, # nominal Type I error rate for each mediator
-  
-  nsims = 2, # default is 1000 simulaiton replications; modify to larger to improve accuracy of power estimation
-  mc.cores = 1 # number of cores for parallel computation
-)
-
-test_run1
+power_res
 
 ```
 
-The output includes the Type I error rates and statistical power for testing interventional indirect effects via each mediator.  
+The output includes a data.frame containing the statistical power for testing interventional indirect effects (IIE) via each mediator, including (1) the familywise ("FW") power of testing all four indirect effects for a mediator, and (2) the per-test ("PT") power of testing only one indirect effect for a mediator. The data.frame also contains the multiple testing adjustments (sig.adjust), Type I error rate (which is 0 if the true value is non-null), confidence interval coverage rate (cover_FW and cover_PT), the mediator (IIE_M1 for mediator M1 and IIE_M2 for mediator M2), and the indirect effects (IIEs; effect).
 
-Specifically, the function outputs (1) the familywise ("FW") Type I error rate and power of testing all four indirect effects for a mediator (i.e., the probability of  finding significance for at least one of the indirect effects for a mediator, when that indirect effect were actually null and non-null, respectively), and (2) the per-test ("PT") Type I error rate and power of testing only one indirect effect for a mediator.  
+
+# Example: Sample Size Calculation
+
+```{r}
+library(mvtnorm)
+library(tidyverse)
+library(glue)
+library(parallel)
+library(calculus)
+
+library(PowerMediators)
+
+?PowerMediators::cal.sample_size
+
+# other arguments use the default specification
+result <- cal.sample_size(n.min = 200, 
+                          n.max = 300, 
+                          n.step = 20, 
+                          power_target = 0.8,
+                          FW_or_PT = c("FW", "PT"),
+                          which_mediator = c("M1", "M2"),
+                          which_effect = c("IIE_M1(1,,0)", "IIE_M2(1,1,)"),
+                          mc.cores = 5, 
+                          nsims = 1000) # may take some time to run 
+
+result$res_n
+
+result$power_FW_M1M2
+result$power_FW_eachM
+
+result$power_PT_someIIE
+result$power_PT_allIIE
+result$power_PT_eachIIE
+
+```
+
+The output includes a list containing the sample size calculation results (see `?PowerMediators::cal.sample_size`).
+
 
 
