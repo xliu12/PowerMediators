@@ -2,36 +2,127 @@
 % Please edit documentation in R/runPower.R
 \name{runPower}
 \alias{runPower}
-\title{Power Analysis for Causal Mediation Analysis}
+\title{Power analysis for causal mediation analysis with two mediators}
 \usage{
 runPower(
-  seed_user = 12,
-  n = 200,
+  seed_user = NULL,
+  n = 100,
   num_x = 2,
   treat.prop = 0.5,
   treat.randomized = FALSE,
-  a_on_x = 0.1,
-  m_on_a = c(0.1, 0.1),
-  m_on_x = c(0.1, 0.1),
+  M_binary = c(FALSE, FALSE),
+  Y_binary = FALSE,
+  R2.ax = 0,
+  R2.mx = c(0.1, 0.1),
+  R2.yx = 0.1,
+  std.m_on_a = c(0.3, 0.3),
   em_corr = 0,
+  std.y_on_a = 0.1,
+  std.y_on_m = c(0.3, 0.3),
+  std.y_on_am_2way = c(0.1, 0.1),
+  std.y_on_m_2way = 0.1,
+  std.y_on_am_3way = 0.1,
+  a_on_x = 0.13,
+  m_on_a = c(0.3, 0.3),
+  m_on_x = c(0.1, 0.1),
   y_on_a = 0.1,
-  y_on_m = rep(0.1, 2),
-  y_on_am_2way = rep(0.1, 2),
+  y_on_m = c(0.3, 0.3),
+  y_on_am_2way = c(0.1, 0.1),
   y_on_m_2way = 0.1,
   y_on_am_3way = 0.1,
   y_on_x = 0.1,
-  nboot = 1000,
+  nboot = NULL,
+  n.draws = 1000,
   sig.level = 0.05,
   nsims = 1000,
   mc.cores = 1
 )
 }
 \arguments{
-\item{n}{Sample size.}
+\item{seed_user}{[code{integer}]\cr Seed to be used by the \code{set.seed()} for offsetting the random number generator. Default is to leave the random number generator alone.}
+
+\item{n}{[\code{integer(1)}]\cr Sample size to be used for power calculation. Default is 100.}
+
+\item{num_x}{[\code{integer(1)}]\cr The number of baseline covariates to be included in the models for power analysis. Default is \code{num_x = 2}.}
+
+\item{treat.prop}{[\code{numeric(1)}]\cr The proportion of the sample allocated to the treatment condition. Default is \code{treat.prop = 0.5}, indicating equal allocation between the treatment and control conditions.}
+
+\item{treat.randomized}{[\code{logic(1)}]\cr Whether the treatment variable is randomized. Default is \code{treat.randomized = FALSE}, allowing the treatment variable to depend on the baseline covariates. If \code{treat.randomized = TRUE} is specified, user-specification of \code{R2.ax} and \code{a_on_x} will be ignored and \code{R2.ax = 0} and \code{a_on_x = 0} will be used, indicating the treatment variable is independent of the covariates.}
+
+\item{M_binary}{[\code{logic(2)}]\cr Whether the mediators are binary. Default is \code{M_binary = c(FALSE, FALSE)}, indicating both mediators are continuous.}
+
+\item{Y_binary}{[\code{logic(1)}]\cr Whether the outcome is binary. Default is \code{Y_binary = FALSE}, indicating the outcome variable is continuous.}
+
+\item{R2.ax}{[\code{numeric(1)}]\cr The proportion of variance in the treatment's latent continuous score explained by the covariates. If \code{treat.randomized = TRUE} is specified, \code{R2.ax = 0} will be used.}
+
+\item{R2.mx}{[\code{numeric(2)}]\cr The proportion of variance in each of the two mediators (or the mediator's latent continuous score) that is explained by the covariates. Default is \code{R2.mx = c(0.1, 0.1)}.}
+
+\item{R2.yx}{[\code{numeric(1)}]\cr The proportion of variance in the outcome (or the outcome's latent continuous score) that is explained by the covariates. Default is \code{R2.yx = 0.1}.}
+
+\item{std.m_on_a}{[\code{numeric(2)}]\cr The standardized coefficients in the models regressing each mediator (or the mediator's latent continuous score) on the treatment variable, adjusting for the covariates. Default is \code{std.m_on_a = c(0.3, 0.3)}.}
+
+\item{em_corr}{[\code{numeric}]\cr The correlation between mediators' residuals. Default is \code{em_corr = 0}. If the mediators' residual correlation can differ between the treatment and control conditions, a user may specify a vector of 2 values, where the first and second elements correspond to the residual correlations under the treatment and control conditions, respectively.}
+
+\item{std.y_on_a}{[\code{numeric(1)}]\cr The standardized coefficient for the treatment in the outcome model that includes the treatment, mediators, interactions among the treatment and mediators, and the covariates. Default is \code{std.y_on_a = 0.1}.}
+
+\item{std.y_on_m}{[\code{numeric(2)}]\cr The standardized coefficients for the two mediators in the outcome model that includes the treatment, mediators, interactions among the treatment and mediators, and the covariates. Default is \code{std.y_on_m = c(0.3, 0.3)}.}
+
+\item{std.y_on_am_2way}{[\code{numeric(2)}]\cr The standardized coefficients for the two-way interactions of the treatment with each of the two mediators, in the outcome model that includes the treatment, mediators, interactions among the treatment and mediators, and the covariates. Default is \code{std.y_on_am_2way = c(0.1, 0.1)}.}
+
+\item{std.y_on_m_2way}{[\code{numeric(1)}]\cr The standardized coefficient for the two-way interaction between the two mediators, in the outcome model that includes the treatment, mediators, interactions among the treatment and mediators, and the covariates. Default is \code{std.y_on_m_2way = 0.1}.}
+
+\item{std.y_on_am_3way}{[\code{numeric(1)}]\cr The standardized coefficient for the three-way interaction of the treatment and two mediators, in the outcome model that includes the treatment, mediators, interactions among the treatment and mediators, and the covariates. Default is \code{std.y_on_am_3way = 0.1}.}
+
+\item{a_on_x}{[\code{numeric(1)}]\cr Optional. The unstandardized regression coefficient corresponding to \code{R2.ax = 0}.}
+
+\item{m_on_a}{[\code{numeric(2)}]\cr Optional. The unstandardized coefficients for the treatment in the models for each mediator.}
+
+\item{m_on_x}{[\code{numeric(2)}]\cr Optional. The unstandardized coefficients for each covariate in the models for each mediator. Within a mediator's model, the covariates have equal coefficients.}
+
+\item{y_on_a}{[\code{numeric(1)}]\cr Optional. The unstandardized coefficient for the treatment in the outcome model.}
+
+\item{y_on_m}{[\code{numeric(2)}]\cr Optional. The unstandardized coefficients for the two mediators in the outcome model.}
+
+\item{y_on_am_2way}{[\code{numeric(2)}]\cr Optional. The unstandardized coefficients for the two-way interactions of the treatment with each of the two mediators in the outcome model.}
+
+\item{y_on_m_2way}{[\code{numeric(1)}]\cr Optional. The unstandardized coefficient for the two-way interaction between the two mediators in the outcome model.}
+
+\item{y_on_am_3way}{[\code{numeric(1)}]\cr Optional. The unstandardized coefficient for the three-way interaction of the treatment and two mediators in the outcome model.}
+
+\item{y_on_x}{[\code{numeric(1)}]\cr Optional. The unstandardized coefficient for each covariate in the outcome model. The covariates have equal coefficients.}
+
+\item{nboot}{[\code{integer(1)}]\cr Optional. The number of bootstrap samples if a user would like to use bootstrapping to obtain confidence intervals for the indirect effects.}
+
+\item{n.draws}{[\code{integer(1)}]\cr The number of random draws for obtaining the Monte Carlo confidence intervals for the indirect effects. Default is \code{n.draws = 1000}.}
+
+\item{sig.level}{[\code{numeric(1)}]\cr The significance level to be used as (i) the familywise Type I error rate in multiple testing adjustments and (ii) the per-test Type I error rate with no adjustment. Default is \code{sig.level = 0.05}. Currently implement the following multiple testing adjustments: the Bonferroni adjustment, and two modified Bonferroni adjustments that incorporate correlations among the indirect effect estimators.}
+
+\item{nsims}{[\code{integer(1)}]\cr The number of replications to be used in the simulation-based power analysis. Default is \code{nsims = 1000}.}
+
+\item{mc.cores}{[\code{integer(1)}]\cr The number of cores to use. Default is \code{mc.cores = 1}.}
 }
 \value{
-A \code{data.frame} containing the Type I error rates and statistical power for testing interventional indirect effects via each mediator. Specifically, the function outputs (1) the familywise ("FW") Type I error rate and power of testing all four indirect effects for a mediator (i.e., the probability of finding significance for at least one of the indirect effects for a mediator, when that indirect effect were actually null and non-null, respectively), and (2) the per-test ("PT") Type I error rate and power of testing only one indirect effect for a mediator.
+A \code{data.frame} containing the statistical power for testing interventional indirect effects (IIE) via each mediator, including (1) the familywise ("FW") power of testing all four indirect effects for a mediator, and (2) the per-test ("PT") power of testing only one indirect effect for a mediator. The \code{data.frame} also contains the multiple testing adjustments (\code{sig.adjust}), Type I error rate (which is 0 if the true value is non-null), confidence interval coverage rate (\code{cover_FW} and \code{cover_PT}), the mediator (\code{IIE_M1} for mediator M1 and \code{IIE_M2} for mediator M2), and the indirect effects (IIEs; \code{effect}).
 }
 \description{
-Implement a simulation-based method for statistical power calculation in causal mediation analysis with two correlated mediators.
+Simulation-based method for statistical power analysis of testing interventional indirect effects for each mediator in a causal mediation analysis with two correlated mediators. Both familywise power and per-test power can be calculated. Currently support binary treatments, binary or continuous mediators, and binary or continuous outcomes.
+}
+\examples{
+
+\donttest{
+    library(mvtnorm)
+    library(tidyverse)
+    library(glue)
+    library(parallel)
+    library(calculus)
+
+    # other arguments use the default specification
+    power_res <- runPower(n = 100, nsims = 1000, mc.cores = 5)
+
+    power_res
+}
+
+
+
+
 }
