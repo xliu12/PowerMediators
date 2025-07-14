@@ -49,7 +49,9 @@ runPower(
 
 \item{treat.randomized}{[\code{logic(1)}]\cr Whether the treatment variable is randomized. Default is \code{treat.randomized = FALSE}, allowing the treatment variable to depend on the baseline covariates. If \code{treat.randomized = TRUE} is specified, user-specification of \code{R2.ax} and \code{a_on_x} will be ignored and \code{R2.ax = 0} and \code{a_on_x = 0} will be used, indicating the treatment variable is independent of the covariates.}
 
-\item{M_binary}{[\code{logic(2)}]\cr Whether the mediators are binary. Default is \code{M_binary = c(FALSE, FALSE)}, indicating both mediators are continuous.}
+\item{M_binary}{[\code{logic(2)}]\cr Whether the mediators are binary. Options include (1) \code{M_binary = c(FALSE, FALSE)} for two continuous mediators (the default),
+(2) \code{M_binary = c(TRUE, FALSE)} for a binary mediator (labeled with "M1") and a continuous mediator (labeled with "M2"), and
+(3) \code{M_binary = c(TRUE, TRUE)} for two binary mediators.}
 
 \item{Y_binary}{[\code{logic(1)}]\cr Whether the outcome is binary. Default is \code{Y_binary = FALSE}, indicating the outcome variable is continuous.}
 

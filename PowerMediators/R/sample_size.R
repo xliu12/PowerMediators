@@ -31,7 +31,9 @@
 #' @param std.y_on_m_2way [\code{numeric(1)}]\cr The standardized coefficient for the two-way interaction between the two mediators, in the outcome model that includes the treatment, mediators, interactions among the treatment and mediators, and the covariates. Default is \code{std.y_on_m_2way = 0.1}.
 #' @param std.y_on_am_3way [\code{numeric(1)}]\cr The standardized coefficient for the three-way interaction of the treatment and two mediators, in the outcome model that includes the treatment, mediators, interactions among the treatment and mediators, and the covariates. Default is \code{std.y_on_am_3way = 0.1}.
 #' @param em_corr [\code{numeric}]\cr The correlation between mediators' residuals. Default is \code{em_corr = 0}. If the mediators' residual correlation can differ between the treatment and control conditions, a user may specify a vector of 2 values, where the first and second elements correspond to the residual correlations under the treatment and control conditions, respectively.
-#' @param M_binary [\code{logic(2)}]\cr Whether the mediators are binary. Default is \code{M_binary = c(FALSE, FALSE)}, indicating both mediators are continuous.
+#' @param M_binary [\code{logic(2)}]\cr Whether the mediators are binary. Options include (1) \code{M_binary = c(FALSE, FALSE)} for two continuous mediators (the default),
+#' (2) \code{M_binary = c(TRUE, FALSE)} for a binary mediator (labeled with "M1") and a continuous mediator (labeled with "M2"), and
+#' (3) \code{M_binary = c(TRUE, TRUE)} for two binary mediators.
 #' @param Y_binary [\code{logic(1)}]\cr Whether the outcome is binary. Default is \code{Y_binary = FALSE}, indicating the outcome variable is continuous.
 #' @param a_on_x [\code{numeric(1)}]\cr Optional. The unstandardized regression coefficient corresponding to \code{R2.ax = 0}.
 #' @param m_on_a [\code{numeric(2)}]\cr Optional. The unstandardized coefficients for the treatment in the models for each mediator.

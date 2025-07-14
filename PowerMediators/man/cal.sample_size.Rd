@@ -72,7 +72,9 @@ If \code{which_mediator = c("M1", "M2")} and \code{FW_or_PT = "FW"} (the default
 When \code{FW_or_PT = "PT"} is specified, \code{which_effect} specifies the indirect effect(s) for which the per-test power should be used in the sample size determination. Options are \code{"all"} or one or some of the following interventional indirect effects (IIEs): \code{"IIE_M1(1,,1)"}, \code{"IIE_M1(1,,0)"}, \code{"IIE_M1(0,,1)"}, \code{"IIE_M1(0,,0)"}, \code{"IIE_M2(1,1,)"}, \code{"IIE_M2(1,0,)"}, \code{"IIE_M2(0,1,)"}, \code{"IIE_M2(0,0,)"}. See the accompanying referrence manuscript for definitions of these effects.
 If \code{which_effect = "all"} and \code{FW_or_PT = "PT"}, the sample size is determined such that the per-test power for any of these indirect effects is higher than or equal to \code{power_target}.}
 
-\item{M_binary}{[\code{logic(2)}]\cr Whether the mediators are binary. Default is \code{M_binary = c(FALSE, FALSE)}, indicating both mediators are continuous.}
+\item{M_binary}{[\code{logic(2)}]\cr Whether the mediators are binary. Options include (1) \code{M_binary = c(FALSE, FALSE)} for two continuous mediators (the default),
+(2) \code{M_binary = c(TRUE, FALSE)} for a binary mediator (labeled with "M1") and a continuous mediator (labeled with "M2"), and
+(3) \code{M_binary = c(TRUE, TRUE)} for two binary mediators.}
 
 \item{Y_binary}{[\code{logic(1)}]\cr Whether the outcome is binary. Default is \code{Y_binary = FALSE}, indicating the outcome variable is continuous.}
 

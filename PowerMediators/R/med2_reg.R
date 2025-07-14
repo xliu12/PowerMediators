@@ -24,20 +24,7 @@ estimate_med2.reg <- function(
     m2_fit <- lm(m2_formula, data = data)
   }
   
-  # data_c <- data %>% 
-  #   mutate(across(c(A, M1, M2), ~ . - mean(.))) %>% 
-  #   mutate(AM1 = A*M1, AM2 = A*M2, M1M2 = M1*M2) %>% 
-  #   mutate(across(c(AM1, M1M2, AM2), ~ . - mean(.))) %>% 
-  #   mutate(AM1M2 = A*M1M2)
-  # y_formula <- as.formula(paste("Y ~ A + M1 + M2 + AM1 + AM2 + M1M2 + AM1M2 +", paste(Xnames, collapse = " + ")))
-  # y_formula1 <- as.formula(paste("Y ~ M1 + M2 + M1:M2 + ", paste(Xnames, collapse = " + ")))
-  # y_fit1 <- glm(y_formula1, data = data[data$A==1, ], family = binomial(link = "probit"))
-  # y_fit0 <- glm(y_formula1, data = data[data$A==0, ], family = binomial(link = "probit"))
-  # coef(y_fit0)
-  # coef(y_fit1)-coef(y_fit0)
-  
-  # gen_data$y_coefs/sqrt(gen_data$var_ey) # true
-  
+
   y_formula <- as.formula(paste("Y ~ A + M1 + M2 + A:M1 + A:M2 + M1:M2 + A:M1:M2 +", paste(Xnames, collapse = " + ")))
   if (Y_binary) {
     y_fit <- glm(y_formula, data = data, family = binomial(link = "probit"))
