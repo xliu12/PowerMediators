@@ -42,7 +42,7 @@ shiny::runGitHub("PowerMediators", "xliu12", subdir = "ShinyApp")
 
 
 
-# R Package PowerMediators
+# R Package: PowerMediators
 Power Analysis for Causal Mediation Analysis with Multiple Mediators
 
 
