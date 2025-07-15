@@ -16,9 +16,12 @@ This Shiny app provides **simulation-based power analysis** for causal mediation
 #### Step 1: Install Required Packages
 
 ``` r
-packages <- c("shiny", "tidyverse", "mvtnorm", "glue", "cubature", "shinyBS", "DT", "future", "promises", "parallel")
+packages <- c("shiny", "tidyverse", "mvtnorm",
+"glue", "cubature", "shinyBS",
+"DT", "future", "promises", "parallel")
 
-lapply(packages, \(pkg) if (!requireNamespace(pkg, quietly = TRUE)) install.packages(pkg)) # install a package if it has not been installed previously
+# install a package if it has not been installed previously
+lapply(packages, \(pkg) if (!requireNamespace(pkg, quietly = TRUE)) install.packages(pkg)) 
 
 ```
 
