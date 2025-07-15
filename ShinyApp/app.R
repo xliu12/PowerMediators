@@ -1,3 +1,4 @@
+library(shiny)
 # Set www directory for custom resources
 addResourcePath("customwww", "www")
 

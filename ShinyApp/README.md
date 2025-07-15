@@ -2,9 +2,9 @@
 
 This Shiny app provides **simulation-based power analysis** for causal mediation models with **two mediators**, supporting:
 
--   ✅ Familywise and per-test power estimation\
--   ✅ Multiple testing corrections\
--   ✅ Flexible model specification for mediator/outcome type\
+-   ✅ Familywise and per-test power estimation
+-   ✅ Multiple testing corrections
+-   ✅ Flexible model specification for mediator/outcome type
 -   ✅ Informative plots and output tables
 
 ------------------------------------------------------------------------
@@ -24,11 +24,14 @@ install.packages(c(
 
 #### Step 2: Run from Local Folder
 
-Make sure you're in the PowerMediators/ root folder, then run:
+Navigate to the root folder (e.g., PowerMediators/) in your R console or RStudio, then run:
+
 
 ``` r
-shiny::runApp("ShinyApp")
+shiny::runApp("./PowerMediators/ShinyApp")
 ```
+Alternatively, you can open the app.R file located in the ShinyApp/ folder in RStudio and run it.
+
 
 ### 🔹 Option 2: Run Directly from GitHub
 
