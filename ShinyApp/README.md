@@ -1,24 +1,37 @@
-# Two-Med-Causal-Power-Analysis
+# 📈 Shiny App: Power Analysis for Two-Mediator Causal Mediation Models
 
-Shiny App: Power Analysis for Two-Mediator Causal Mediation Models
+This Shiny app provides **simulation-based power analysis** for causal mediation models with **two mediators**, supporting:
 
-The online app can be accessed here: [https://jasminezqy.shinyapps.io/shinyapp/](https://jasminezqy.shinyapps.io/shinyapp/)  
+-   ✅ Familywise and per-test power estimation\
+-   ✅ Multiple testing corrections\
+-   ✅ Flexible model specification for mediator/outcome type\
+-   ✅ Informative plots and output tables
 
+------------------------------------------------------------------------
 
-The app can also be run locally using the following code in **R**:
+## 🚀 How to Run the App
 
-```r
-# Install required packages
+### 🔹 Option 1: Run Locally
+
+#### Step 1: Install Required Packages
+
+``` r
 install.packages(c(
   "shiny", "tidyverse", "mvtnorm", "glue", "cubature",
   "shinyBS", "DT", "future", "promises", "parallel"
 ))
+```
 
+#### Step 2: Run from Local Folder
 
-# Run the app (if downloaded from GitHub)
-shiny::runApp("path/to/downloaded/folder")
+Make sure you're in the PowerMediators/ root folder, then run:
 
-# Or run the app directly from the R console
-shiny::runGitHub("Causal-Two-Mediator-power-Rshiny", "JasmineZqy")
+``` r
+shiny::runApp("ShinyApp")
+```
 
+### 🔹 Option 2: Run Directly from GitHub
 
+``` r
+shiny::runGitHub("PowerMediators", "xliu12", subdir = "ShinyApp")
+```
