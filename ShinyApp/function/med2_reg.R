@@ -1,3 +1,5 @@
+
+
 estimate_med2.reg <- function(
     data = dat,
     M_binary,
@@ -5,6 +7,7 @@ estimate_med2.reg <- function(
     n.draws = 1000 
 ) {
   Xnames <- grep("^X", names(data), value = TRUE)
+  
   
   # fit models ------------
   m1_formula <- as.formula(paste("M1 ~ A +", paste(Xnames, collapse = " + ")))
@@ -21,6 +24,7 @@ estimate_med2.reg <- function(
     m2_fit <- lm(m2_formula, data = data)
   }
   
+
   y_formula <- as.formula(paste("Y ~ A + M1 + M2 + A:M1 + A:M2 + M1:M2 + A:M1:M2 +", paste(Xnames, collapse = " + ")))
   if (Y_binary) {
     y_fit <- glm(y_formula, data = data, family = binomial(link = "probit"))
@@ -29,12 +33,9 @@ estimate_med2.reg <- function(
   }
   
   # coefficient estimates
-  if (is.null(n.draws)) {
-    # draws of coefficient estimates for imputation-based estimator and MCCI
-    y_coefs <- mvtnorm::rmvnorm(1, mean = coef(y_fit), sigma = diag(0, length(coef(y_fit)))) %>% as.data.frame()
-    m1_coefs <- mvtnorm::rmvnorm(1, mean = coef(m1_fit), sigma = diag(0, length(coef(m1_fit)))) %>% as.data.frame()
-    m2_coefs <- mvtnorm::rmvnorm(1, mean = coef(m2_fit), sigma = diag(0, length(coef(m2_fit)))) %>% as.data.frame()
-  }
+  y_coefs <- as.data.frame(t(coef(y_fit)))
+  m1_coefs <- as.data.frame(t(coef(m1_fit)))
+  m2_coefs <- as.data.frame(t(coef(m2_fit)))
   
   if (!is.null(n.draws)) {
     # draws of coefficient estimates for imputation-based estimator and MCCI
@@ -92,12 +93,10 @@ med2.reg <- function(
   }
   
   if (!is.null(nboot)) {
-    boot_est <- replicate(nboot, {
+    boot_est <- t(replicate(nboot, {
       df_boot <- data[sample(1:nrow(data), replace = TRUE), ]
       est_IIE <- estimate_med2.reg(data = df_boot, M_binary, Y_binary, n.draws = NULL)
-    }, simplify = FALSE) %>% do.call(rbind, .)
-    
-    
+    })) %>% as.data.frame()
   } else {
     boot_est <- estimate_med2.reg(data, M_binary, Y_binary, n.draws)
   }
@@ -109,7 +108,7 @@ med2.reg <- function(
   k <- ncol(boot_est_IIE_M1) # number of tests
   
   r_IIE_M1 <- map_dbl(1:k, \(i=1) {
-    mean(abs(cor(boot_est_IIE_M1)[i, -i]))
+    mean(abs(cor(boot_est_IIE_M1, use = "pairwise")[i, -i]))
   })
   names(r_IIE_M1) <- colnames(boot_est_IIE_M1)
   # modified_bon1
@@ -133,9 +132,9 @@ med2.reg <- function(
   names(sig.PT_IIE_M1) <- names(r_IIE_M1)
   
   test_IIE_M1 <- map_df(1:k, \(i=1) {
-    ci_low <- quantile(boot_est_IIE_M1[[i]], probs = sig.PT_IIE_M1[[i]]/2)
-    ci_up <- quantile(boot_est_IIE_M1[[i]], probs = 1-sig.PT_IIE_M1[[i]]/2)
-    SE <- sd(boot_est_IIE_M1[[i]])
+    ci_low <- quantile(boot_est_IIE_M1[[i]], probs = sig.PT_IIE_M1[[i]]/2, na.rm = TRUE)
+    ci_up <- quantile(boot_est_IIE_M1[[i]], probs = 1-sig.PT_IIE_M1[[i]]/2, na.rm = TRUE)
+    SE <- sd(boot_est_IIE_M1[[i]], na.rm = TRUE)
     
     if_sig <- (ci_low*ci_up>0)
     
@@ -153,7 +152,7 @@ med2.reg <- function(
   k <- ncol(boot_est_IIE_M2) # number of tests
   
   r_IIE_M2 <- map_dbl(1:k, \(i=1) {
-    mean(abs(cor(boot_est_IIE_M2)[i, -i]))
+    mean(abs(cor(boot_est_IIE_M2, use = "pairwise")[i, -i]))
   })
   names(r_IIE_M2) <- colnames(boot_est_IIE_M2)
   # modified_bon1
@@ -177,9 +176,9 @@ med2.reg <- function(
   names(sig.PT_IIE_M2) <- names(r_IIE_M2)
   
   test_IIE_M2 <- map_df(1:k, \(i=1) {
-    ci_low <- quantile(boot_est_IIE_M2[[i]], probs = sig.PT_IIE_M2[[i]]/2)
-    ci_up <- quantile(boot_est_IIE_M2[[i]], probs = 1-sig.PT_IIE_M2[[i]]/2)
-    SE <- sd(boot_est_IIE_M2[[i]])
+    ci_low <- quantile(boot_est_IIE_M2[[i]], probs = sig.PT_IIE_M2[[i]]/2, na.rm = TRUE)
+    ci_up <- quantile(boot_est_IIE_M2[[i]], probs = 1-sig.PT_IIE_M2[[i]]/2, na.rm = TRUE)
+    SE <- sd(boot_est_IIE_M2[[i]], na.rm = TRUE)
     
     if_sig <- (ci_low*ci_up>0)
     
@@ -299,68 +298,3 @@ bYM_cal.IIE <- function(y_coefs, m1_coefs, m2_coefs,
 }
 
 
-# NOT USED -------------
-intEY.a0a1a2 <- function(a0=1, a1=0, a2=1,
-                         y_fit, m1_fit, m2_fit, data,
-                         M_binary = c(FALSE, FALSE),
-                         Y_binary = TRUE, nreps = 1000) {
-  
-  if (Y_binary==TRUE & (M_binary[1]==TRUE) & (M_binary[2]==TRUE)) {
-    pM1a1 <- predict(m1_fit, newdata = mutate(data, A=a1), type = "response")
-    pM2a2 <- predict(m2_fit, newdata = mutate(data, A=a2), type = "response")
-    
-    EYx <- map2(.x = c(0,0,1,1), .y = c(0,1,0,1), .f = \(.x, .y) {
-      predict(y_fit, newdata = mutate(data, A=a0, M1=.x, M2=.y), type = "response") * (pM1a1 * .x + (1-pM1a1) * (1-.x)) * (pM2a2 * .y + (1-pM2a2) * (1-.y))
-    }) %>% reduce(.f = `+`)
-    
-  }
-  
-  if (Y_binary==TRUE & (M_binary[1]==TRUE) & (M_binary[2]==FALSE)) {
-    pM1a1 <- predict(m1_fit, newdata = mutate(data, A=a1), type = "response")
-    
-    EYx <- replicate(nreps, {
-      
-      M2a2 <- predict(m2_fit, newdata = mutate(data, A=a2)) + rnorm(nrow(data), sd = sigma(m2_fit))
-      
-      EY <- map(.x = c(0,1), .f = \(.x) {
-        predict(y_fit, newdata = mutate(data, A=a0, M1=.x, M2=M2a2), type = "response") * (pM1a1 * .x + (1-pM1a1) * (1-.x))
-      }) %>% reduce(.f = `+`)
-      
-      EY
-    })
-  }
-  
-  if (Y_binary==TRUE & (M_binary[1]==FALSE) & (M_binary[2]==TRUE)) {
-    pM2a2 <- predict(m2_fit, newdata = mutate(data, A=a2), type = "response")
-    
-    EYx <- replicate(nreps, {
-      
-      M1a1 <- predict(m1_fit, newdata = mutate(data, A=a1)) + rnorm(nrow(data), sd = sigma(m1_fit))
-      
-      EY <- map(.x = c(0,1), .f = \(.x) {
-        predict(y_fit, newdata = mutate(data, A=a0, M1=M1a1, M2=.x), type = "response") * (pM2a2 * .x + (1-pM2a2) * (1-.x))
-      }) %>% reduce(.f = `+`)
-      
-      EY
-    })
-  }
-  
-  if (Y_binary==TRUE & (M_binary[1]==FALSE) & (M_binary[2]==FALSE)) {
-    EYx <- replicate(nreps, {
-      M1a1 <- predict(m1_fit, newdata = mutate(data, A=a1)) + rnorm(nrow(data), sd = sigma(m1_fit))
-      M2a2 <- predict(m2_fit, newdata = mutate(data, A=a2)) + rnorm(nrow(data), sd = sigma(m2_fit))
-      EY <- predict(y_fit, newdata = mutate(data, A=a0, M1=M1a1, M2=M2a2), type = "response")
-      
-      EY
-    })
-  }
-  
-  if (Y_binary==FALSE) {
-    M1a1 <- predict(m1_fit, newdata = mutate(data, A=a1), type = "response")
-    M2a2 <- predict(m2_fit, newdata = mutate(data, A=a2), type = "response")
-    EYx <- predict(y_fit, newdata = mutate(data, A=a0, M1=M1a1, M2=M2a2), type = "response")
-    EYa0a1a2 <- mean(EYx)
-  }
-  
-  EYa0a1a2
-}

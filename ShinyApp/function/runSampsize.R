@@ -1,3 +1,56 @@
+#' Sample Size Planning for Causal Mediation with Two Mediators
+#'
+#' Iteratively increases sample size from a starting point until a target power is achieved,
+#' using results from `runPower()` for power analysis of interventional indirect effects (IIEs).
+#'
+#' @param n [\code{integer(1)}]  
+#' Initial sample size to start power evaluation. Default is \code{100}.
+#' @param steps [\code{integer(1)}]  
+#' Step size to increment sample size in each iteration. Default is \code{20}.
+#' @param TarPow [\code{numeric(1)}]  
+#' Target power threshold to reach. Default is \code{0.8}.
+#' @param max_n [\code{integer(1)}]  
+#' Maximum sample size to consider. Default is \code{100}.
+#' @param sig.adjust [\code{character}]  
+#' Adjustment methods for multiple testing. Choose from \code{"no_adjust"}, \code{"bonferroni"}, \code{"modified_bon1"}, \code{"modified_bon2"}.
+#' @param mediation [\code{character}]  
+#' Mediator(s) to include: \code{"IIE_M1"}, \code{"IIE_M2"}, or both.
+#' @param effect [\code{character}]  
+#' Specific IIE effects to evaluate. Use \code{"all"} or specify from: \code{"IIE_M1(1,,1)"}, \code{"IIE_M1(1,,0)"}, \code{"IIE_M1(0,,1)"}, \code{"IIE_M1(0,,0)"}, \code{"IIE_M2(1,1,)"}, \code{"IIE_M2(1,0,)"}, \code{"IIE_M2(0,1,)"}, \code{"IIE_M2(0,0,)"}.
+#' @param power [\code{character(1)}]  
+#' Type of power to target: \code{"familywise"} or \code{"per-test"}.
+#' @param plot [\code{logical(1)}]  
+#' Whether to generate a ggplot2 power curve. Default is \code{TRUE}.
+#' @param verbose [\code{logical(1)}]  
+#' Whether to print progress messages. Default is \code{TRUE}.
+#' @param ... Additional arguments passed to \code{runPower()}.
+#'
+#' @return A list containing:
+#' \item{power_df}{All power results computed across iterations.}
+#' \item{target_power_table}{A summary table showing sample sizes that meet or exceed the target power.}
+#' \item{plot}{A ggplot2 object showing power vs. sample size (if \code{plot = TRUE}).}
+#'
+#' @details
+#' This function repeatedly increases sample size until the specified power level is met or the maximum sample size is reached.
+#' Users can select the type of power (familywise vs. per-test), the indirect effects of interest, and adjustment method.
+#'
+#' @seealso \code{\link{runPower}}
+#'
+#' @examples
+#' \dontrun{
+#' runSampsize(n = 80, steps = 20, max_n = 200, TarPow = 0.8,
+#'             sig.adjust = "bonferroni",
+#'             mediation = c("IIE_M1", "IIE_M2"),
+#'             effect = "all",
+#'             power = "familywise",
+#'             std.m_on_a = c(0.3, 0.3),
+#'             std.y_on_m = c(0.3, 0.3),
+#'             nsims = 1000)
+#' }
+#'
+#' @export
+
+
 runSampsize <- function(
         n = 100,
         steps = 20,
