@@ -39,7 +39,7 @@ runPower(
 )
 }
 \arguments{
-\item{seed_user}{[code{integer}]\cr Seed to be used by the \code{set.seed()} for offsetting the random number generator. Default is to leave the random number generator alone.}
+\item{seed_user}{[\code{integer}]\cr Seed to be used by the \code{set.seed()} for offsetting the random number generator. Default is to leave the random number generator alone.}
 
 \item{n}{[\code{integer(1)}]\cr Sample size to be used for power calculation. Default is 100.}
 
@@ -97,17 +97,20 @@ runPower(
 
 \item{n.draws}{[\code{integer(1)}]\cr The number of random draws for obtaining the Monte Carlo confidence intervals for the indirect effects. Default is \code{n.draws = 1000}.}
 
-\item{sig.level}{[\code{numeric(1)}]\cr The significance level to be used as (i) the familywise Type I error rate in multiple testing adjustments and (ii) the per-test Type I error rate with no adjustment. Default is \code{sig.level = 0.05}. Currently implement the following multiple testing adjustments: the Bonferroni adjustment, and two modified Bonferroni adjustments that incorporate correlations among the indirect effect estimators.}
+\item{sig.level}{[\code{numeric(1)}]\cr The significance level: (i) the per-test Type I error rate under no adjustment, and (ii) the familywise Type I error rate for each mediator's family of four indirect effects under the Bonferroni adjustment, the two modified Bonferroni adjustments that incorporate correlations among the indirect effect estimators, and Holm's procedure. Default is \code{sig.level = 0.05}.}
 
 \item{nsims}{[\code{integer(1)}]\cr The number of replications to be used in the simulation-based power analysis. Default is \code{nsims = 1000}.}
 
 \item{mc.cores}{[\code{integer(1)}]\cr The number of cores to use. Default is \code{mc.cores = 1}.}
 }
 \value{
-A \code{data.frame} containing the statistical power for testing interventional indirect effects (IIE) via each mediator, including (1) the familywise ("FW") power of testing all four indirect effects for a mediator, and (2) the per-test ("PT") power of testing only one indirect effect for a mediator. The \code{data.frame} also contains the multiple testing adjustments (\code{sig.adjust}), Type I error rate (which is 0 if the true value is non-null), confidence interval coverage rate (\code{cover_FW} and \code{cover_PT}), the mediator (\code{IIE_M1} for mediator M1 and \code{IIE_M2} for mediator M2), and the indirect effects (IIEs; \code{effect}).
+A \code{data.frame} with one row per mediator, multiple testing adjustment (\code{sig.adjust}) and indirect effect (\code{effect}): 40 rows for one sample size. It contains the statistical power for testing interventional indirect effects (IIE) via each mediator, including (1) the familywise ("FW") power of testing all four indirect effects for a mediator (\code{power_FW}), and (2) the per-test ("PT") power of testing only one indirect effect for a mediator (\code{power_PT}). The \code{data.frame} also contains the Type I error rate (which is 0 if the true value is non-null), the confidence interval coverage rate (\code{cover_FW}, all four intervals of the mediator cover their true values, and \code{cover_PT}; both \code{NA} for \code{"holm"}), the mediator (\code{IIE_M1} for mediator M1 and \code{IIE_M2} for mediator M2), and the true value of each indirect effect averaged over the replications (\code{true_val}).
 }
 \description{
 Simulation-based method for statistical power analysis of testing interventional indirect effects for each mediator in a causal mediation analysis with two correlated mediators. Both familywise power and per-test power can be calculated. Currently support binary treatments, binary or continuous mediators, and binary or continuous outcomes.
+}
+\details{
+Five multiple testing adjustments are reported for each mediator's family of four indirect effects (column \code{sig.adjust}): \code{"no_adjust"}, \code{"bonferroni"}, \code{"modified_bon1"}, \code{"modified_bon2"} and \code{"holm"}. The first four decide significance from the Monte Carlo (or bootstrap) percentile interval of each indirect effect at the per-test level that the adjustment assigns to it. Holm's step-down procedure instead uses the two-sided Monte Carlo p-value of each indirect effect, \eqn{p = \min\{1, 2\min[\hat{P}(\theta \le 0), \hat{P}(\theta \ge 0)]\}} over the same draws \eqn{\theta}, adjusted within each mediator's family of four by \code{stats::p.adjust(method = "holm")}; an indirect effect is significant when its adjusted p-value is below \code{sig.level}, the familywise level. Holm's procedure has no confidence interval, so \code{cover_FW} and \code{cover_PT} are \code{NA} in its rows.
 }
 \examples{
 

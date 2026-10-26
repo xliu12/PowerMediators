@@ -46,19 +46,20 @@
 #' @param y_on_am_3way [\code{numeric(1)}]\cr Optional. The unstandardized coefficient for the three-way interaction of the treatment and two mediators in the outcome model.
 #' @param n.draws [\code{integer(1)}]\cr The number of random draws for obtaining the Monte Carlo confidence intervals for the indirect effects. Default is \code{n.draws = 1000}.
 #' @param nboot [\code{integer(1)}]\cr Optional. The number of bootstrap samples if a user would like to use bootstrapping to obtain confidence intervals for the indirect effects.
-#' @param sig.level [\code{numeric(1)}]\cr The significance level to be used as (i) the familywise Type I error rate in multiple testing adjustments and (ii) the per-test Type I error rate with no adjustment. Default is \code{sig.level = 0.05}. Currently implement the following multiple testing adjustments: the Bonferroni adjustment, and two modified Bonferroni adjustments that incorporate correlations among the indirect effect estimators.
+#' @param sig.level [\code{numeric(1)}]\cr The significance level: (i) the per-test Type I error rate under no adjustment, and (ii) the familywise Type I error rate for each mediator's family of four indirect effects under the Bonferroni adjustment, the two modified Bonferroni adjustments that incorporate correlations among the indirect effect estimators, and Holm's procedure. Default is \code{sig.level = 0.05}.
 #' @param nsims [\code{integer(1)}]\cr The number of replications to be used in the simulation-based power analysis. Default is \code{nsims = 1000}.
 #' @param mc.cores [\code{integer(1)}]\cr The number of cores to use. Default is \code{mc.cores = 1}.
-#' @param seed_user [code{integer}]\cr Seed to be used by the \code{set.seed()} for offsetting the random number generator. Default is to leave the random number generator alone.
+#' @param seed_user [\code{integer}]\cr Seed to be used by the \code{set.seed()} for offsetting the random number generator. Default is to leave the random number generator alone.
 #'
 #'
 #' @param multiple_testing_adjustment [\code{character}]\cr
 #' Method(s) to be used for multiple testing adjustment.
-#' Default is \code{multiple_testing_adjustment = c("no_adjust", "bonferroni", "modified_bon1", "modified_bon2")}.
+#' Default is \code{multiple_testing_adjustment = c("no_adjust", "bonferroni", "modified_bon1", "modified_bon2", "holm")}.
 #' Options include (1) \code{"no_adjust"}, which will use \code{sig.level} as the per-test Type I error rate;
 #' (2)  \code{"bonferroni"}, which will use the Bonferroni adjustment with \code{sig.level} as the familywise Type I error rate for each mediator, leading to the per-test Type I error rate of \code{sig.level}/4;
 #' (3)  \code{"modified_bon1"}, which will use the modified Bonferroni-1 adjustment with \code{sig.level} as the familywise Type I error rate for each mediator (\eqn{\alpha_{FW}}), leading to the per-test Type I error rate of \eqn{ \alpha_{PT,j} = \frac{\alpha_{FW}}{k -(k-1)\sqrt{|\bar r_j|}}};
 #' (4)  \code{"modified_bon2"}, which will use the modified Bonferroni-2 adjustment with \code{sig.level} as the familywise Type I error rate for each mediator (\eqn{\alpha_{FW}}), leading to the per-test Type I error rate of \eqn{  \alpha_{PT ,j}= \frac{\alpha_{FW}}{k^{1-\sqrt{|\bar r_j|}}}}.
+#' (5)  \code{"holm"}, which will use Holm's procedure within each mediator's family of four indirect effects, applied to their two-sided Monte Carlo p-values from the same draws that give the intervals of the other adjustments, with \code{sig.level} as the familywise Type I error rate; it has no confidence interval, so the coverage columns of \code{res_n} are \code{NA} for Holm's procedure (see \code{\link{runPower}}).
 #' For the two modified Bonferroni adjustments,  \eqn{j=1,2,3,4} index the four indirect effects in the family for each mediator, \eqn{k=4} is the number of tests, and  \eqn{|\bar r_j|} is the average absolute correlation between the estimator of the j-th effect and the estimators of the other three effects in the family. These two adjustments are extended from Smith, C. E., & Cribbie, R. A. (2013). Multiplicity control in structural equation modeling: Incorporating parameter dependencies Structural Equation Modeling: A Multidisciplinary Journal, 20(1), 79–85.
 #'
 #'
@@ -126,7 +127,7 @@ cal.sample_size <- function(seed_user = 12,
 
                             # for power
                             sig.level = 0.05,
-                            multiple_testing_adjustment = c("no_adjust", "bonferroni", "modified_bon1", "modified_bon2"),
+                            multiple_testing_adjustment = c("no_adjust", "bonferroni", "modified_bon1", "modified_bon2", "holm"),
 
                             # for simulation-based power calculation
                             nsims = 1000, mc.cores = 1

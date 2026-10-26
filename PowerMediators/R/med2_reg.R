@@ -80,10 +80,38 @@ estimate_med2.reg <- function(
 }
 
 
+
+# Two-sided p-value from the Monte Carlo procedure: p_MC = min(1, 2 min{P(theta <= 0), P(theta >= 0)}). 
+p_mc <- function(draws) {
+  draws <- as.matrix(draws)
+  pmin(1, 2 * pmin(colMeans(draws <= 0, na.rm = TRUE),
+                   colMeans(draws >= 0, na.rm = TRUE)))
+}
+
+# Holm's procedure for one family (the four IIEs of one mediator). The decision
+# uses the Holm-adjusted p-value at the familywise level sig.IIE. Holm's procedure
+# has no confidence interval, so ci_low and ci_up are NA.
+holm_rows <- function(boot_est_fam, p, sig.IIE) {
+  p_holm <- stats::p.adjust(p, method = "holm")
+  data.frame(
+    effect     = colnames(boot_est_fam),
+    SE         = vapply(seq_len(ncol(boot_est_fam)),
+                        \(i) sd(boot_est_fam[[i]], na.rm = TRUE), numeric(1)),
+    ci_low     = NA_real_,
+    ci_up      = NA_real_,
+    if_sig     = unname(p_holm < sig.IIE),
+    sig.adjust = "holm",
+    p_mc       = unname(p),
+    p_adj      = unname(p_holm),
+    row.names  = NULL
+  )
+}
+
+
 med2.reg <- function(
     data = dat, M_binary, Y_binary,
     sig.IIE = 0.05,
-    sig.adjust = c("no_adjust", "bonferroni", "modified_bon1", "modified_bon2"),
+    sig.adjust = c("no_adjust", "bonferroni", "modified_bon1", "modified_bon2", "holm"),
     nboot = NULL, # for bootstrap CI
     n.draws = 1000 # for Monte Carlo CI
 ) {
@@ -91,6 +119,12 @@ med2.reg <- function(
   if (!is.null(nrow(est_IIE))) {
     est_IIE <- est_IIE %>% unlist
   }
+  # Holm's procedure has no interval, and the interval code below runs
+  # over the other adjustments.
+  sig.adjust <- unique(sig.adjust)
+  sig.adjust_ci <- setdiff(sig.adjust, "holm")
+  use_holm <- "holm" %in% sig.adjust
+
   
   if (!is.null(nboot)) {
     boot_est <- t(replicate(nboot, {
@@ -111,6 +145,7 @@ med2.reg <- function(
     mean(abs(cor(boot_est_IIE_M1, use = "pairwise")[i, -i]))
   })
   names(r_IIE_M1) <- colnames(boot_est_IIE_M1)
+  p_IIE_M1 <- p_mc(boot_est_IIE_M1)   # Monte Carlo p-values of the four IIE_M1 (no RNG)
   # modified_bon1
   # \alpha_\PT = \frac{\alpha_\FW}{k -(k-1)\sqrt{|\bar r_j|}}
   
@@ -118,28 +153,35 @@ med2.reg <- function(
   # \alpha_\PT = \frac{\alpha_\FW}{k^{1-\sqrt{|\bar r_j|}}}
   
   
-  sig.PT_IIE_M1 <- map(1:k, \(i=1) {
-    sig.PT <- case_when(sig.adjust == "no_adjust" ~ sig.IIE,
-                        sig.adjust == "bonferroni" ~ sig.IIE/k,
-                        sig.adjust == "modified_bon1" ~ sig.IIE/(k-(k-1)*sqrt(r_IIE_M1[i])),
-                        sig.adjust == "modified_bon2" ~ sig.IIE/(k^(1-sqrt(r_IIE_M1[i])))
-    )
+  test_IIE_M1 <- NULL
+  if (length(sig.adjust_ci) > 0) {   # the interval-based adjustments
+    sig.PT_IIE_M1 <- map(1:k, \(i=1) {
+      sig.PT <- case_when(sig.adjust_ci == "no_adjust" ~ sig.IIE,
+                          sig.adjust_ci == "bonferroni" ~ sig.IIE/k,
+                          sig.adjust_ci == "modified_bon1" ~ sig.IIE/(k-(k-1)*sqrt(r_IIE_M1[i])),
+                          sig.adjust_ci == "modified_bon2" ~ sig.IIE/(k^(1-sqrt(r_IIE_M1[i])))
+      )
     
-    names(sig.PT) <- sig.adjust
-    sig.PT
-  })
+      names(sig.PT) <- sig.adjust_ci
+      sig.PT
+    })
   
-  names(sig.PT_IIE_M1) <- names(r_IIE_M1)
+    names(sig.PT_IIE_M1) <- names(r_IIE_M1)
   
-  test_IIE_M1 <- map_df(1:k, \(i=1) {
-    ci_low <- quantile(boot_est_IIE_M1[[i]], probs = sig.PT_IIE_M1[[i]]/2, na.rm = TRUE)
-    ci_up <- quantile(boot_est_IIE_M1[[i]], probs = 1-sig.PT_IIE_M1[[i]]/2, na.rm = TRUE)
-    SE <- sd(boot_est_IIE_M1[[i]], na.rm = TRUE)
+    test_IIE_M1 <- map_df(1:k, \(i=1) {
+      ci_low <- quantile(boot_est_IIE_M1[[i]], probs = sig.PT_IIE_M1[[i]]/2, na.rm = TRUE)
+      ci_up <- quantile(boot_est_IIE_M1[[i]], probs = 1-sig.PT_IIE_M1[[i]]/2, na.rm = TRUE)
+      SE <- sd(boot_est_IIE_M1[[i]], na.rm = TRUE)
     
-    if_sig <- (ci_low*ci_up>0)
+      if_sig <- (ci_low*ci_up>0)
     
-    data.frame(effect = colnames(boot_est_IIE_M1)[i], SE = SE, ci_low = ci_low, ci_up = ci_up, if_sig = if_sig, sig.adjust = sig.adjust, row.names = NULL)
-  })
+      data.frame(effect = colnames(boot_est_IIE_M1)[i], SE = SE, ci_low = ci_low, ci_up = ci_up, if_sig = if_sig, sig.adjust = sig.adjust_ci,
+                 p_mc = p_IIE_M1[[i]], p_adj = NA_real_, row.names = NULL)
+    })
+  }
+  if (use_holm) {
+    test_IIE_M1 <- bind_rows(test_IIE_M1, holm_rows(boot_est_IIE_M1, p_IIE_M1, sig.IIE))
+  }
   
   test_IIE_M1 <- test_IIE_M1 %>%
     group_by(sig.adjust) %>%
@@ -155,6 +197,7 @@ med2.reg <- function(
     mean(abs(cor(boot_est_IIE_M2, use = "pairwise")[i, -i]))
   })
   names(r_IIE_M2) <- colnames(boot_est_IIE_M2)
+  p_IIE_M2 <- p_mc(boot_est_IIE_M2)   # Monte Carlo p-values of the four IIE_M2 (no RNG)
   # modified_bon1
   # \alpha_\PT = \frac{\alpha_\FW}{k -(k-1)\sqrt{|\bar r_j|}}
   
@@ -162,28 +205,35 @@ med2.reg <- function(
   # \alpha_\PT = \frac{\alpha_\FW}{k^{1-\sqrt{|\bar r_j|}}}
   
   
-  sig.PT_IIE_M2 <- map(1:k, \(i=1) {
-    sig.PT <- case_when(sig.adjust == "no_adjust" ~ sig.IIE,
-                        sig.adjust == "bonferroni" ~ sig.IIE/k,
-                        sig.adjust == "modified_bon1" ~ sig.IIE/(k-(k-1)*sqrt(r_IIE_M2[i])),
-                        sig.adjust == "modified_bon2" ~ sig.IIE/(k^(1-sqrt(r_IIE_M2[i])))
-    )
+  test_IIE_M2 <- NULL
+  if (length(sig.adjust_ci) > 0) {   # the interval-based adjustments
+    sig.PT_IIE_M2 <- map(1:k, \(i=1) {
+      sig.PT <- case_when(sig.adjust_ci == "no_adjust" ~ sig.IIE,
+                          sig.adjust_ci == "bonferroni" ~ sig.IIE/k,
+                          sig.adjust_ci == "modified_bon1" ~ sig.IIE/(k-(k-1)*sqrt(r_IIE_M2[i])),
+                          sig.adjust_ci == "modified_bon2" ~ sig.IIE/(k^(1-sqrt(r_IIE_M2[i])))
+      )
     
-    names(sig.PT) <- sig.adjust
-    sig.PT
-  })
+      names(sig.PT) <- sig.adjust_ci
+      sig.PT
+    })
   
-  names(sig.PT_IIE_M2) <- names(r_IIE_M2)
+    names(sig.PT_IIE_M2) <- names(r_IIE_M2)
   
-  test_IIE_M2 <- map_df(1:k, \(i=1) {
-    ci_low <- quantile(boot_est_IIE_M2[[i]], probs = sig.PT_IIE_M2[[i]]/2, na.rm = TRUE)
-    ci_up <- quantile(boot_est_IIE_M2[[i]], probs = 1-sig.PT_IIE_M2[[i]]/2, na.rm = TRUE)
-    SE <- sd(boot_est_IIE_M2[[i]], na.rm = TRUE)
+    test_IIE_M2 <- map_df(1:k, \(i=1) {
+      ci_low <- quantile(boot_est_IIE_M2[[i]], probs = sig.PT_IIE_M2[[i]]/2, na.rm = TRUE)
+      ci_up <- quantile(boot_est_IIE_M2[[i]], probs = 1-sig.PT_IIE_M2[[i]]/2, na.rm = TRUE)
+      SE <- sd(boot_est_IIE_M2[[i]], na.rm = TRUE)
     
-    if_sig <- (ci_low*ci_up>0)
+      if_sig <- (ci_low*ci_up>0)
     
-    data.frame(effect = colnames(boot_est_IIE_M2)[i], SE = SE, ci_low = ci_low, ci_up = ci_up, if_sig = if_sig, sig.adjust = sig.adjust, row.names = NULL)
-  })
+      data.frame(effect = colnames(boot_est_IIE_M2)[i], SE = SE, ci_low = ci_low, ci_up = ci_up, if_sig = if_sig, sig.adjust = sig.adjust_ci,
+                 p_mc = p_IIE_M2[[i]], p_adj = NA_real_, row.names = NULL)
+    })
+  }
+  if (use_holm) {
+    test_IIE_M2 <- bind_rows(test_IIE_M2, holm_rows(boot_est_IIE_M2, p_IIE_M2, sig.IIE))
+  }
   
   test_IIE_M2 <- test_IIE_M2 %>%
     group_by(sig.adjust) %>%
@@ -195,6 +245,8 @@ med2.reg <- function(
   res <- full_join(
     data.frame(effect = names(est_IIE), est = est_IIE), test_IIE, by = "effect")
   
+  res <- res[, c("effect", "est", "SE", "ci_low", "ci_up", "if_sig", "sig.adjust", "any_sig",
+                 "p_mc", "p_adj")]   # the columns of version 0.1.0 first
   res
   
 }
