@@ -2,8 +2,8 @@ Package: PowerMediators
 Type: Package
 Title: Power Analysis for Causal Mediation Analysis with Multiple Mediators
 Version: 0.2.0
-Author: Author
-Maintainer: Author <author@mail>
+Author: Xiao Liu and Jasmine Zeng
+Maintainer: Xiao Liu <xiao.liu@austin.utexas.edu>
 Description: Implement a simulation-based method for statistical power and sample size calculation in causal mediation analysis with two correlated mediators.
 Imports: 
     dplyr,
